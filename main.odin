@@ -1,4 +1,4 @@
-package brilcore
+package bril
 
 import json "core:encoding/json"
 import os "core:os"
@@ -7,9 +7,8 @@ import fmt "core:fmt"
 main :: proc() {
     args := os.args
     defer delete(args)
-    // TODO: Handle faulty options
-    if len(args) != 1 {
-        fmt.eprintln("usage: ./bril-odin < src.json")
+    if len(args) != 2 {
+        fmt.eprintln("usage: ./bril-odin PASS < src.json")
         return
     }
 
@@ -29,8 +28,29 @@ main :: proc() {
     prg := json2prg(src_json.(json.Object))
     defer destroy_program(&prg)
 
+    switch args[1] {
+        case "--print-form-blocks": {
+            for func in prg {
+                block_map := func2block_map(func)
+                fmt.println("\n", block_map)
+            }
+            return
+        }
+        case "--count-additions": {
+            num_adds := 0
+            for func in prg {
+                for instr in func.instrs {
+                    if instr.op == "add" {
+                        num_adds += 1
+                    }
+                }
+            }
+            fmt.println("program has", num_adds, "additions")
+            return
+        }
+        case:
+    }
     dest_json := prg2json(prg)
-
     options := json.Marshal_Options{pretty = true, use_spaces = true, spaces = 2}
     out, marshal_err := json.marshal(dest_json, options)
     if marshal_err != nil {

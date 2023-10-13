@@ -1,4 +1,4 @@
-package brilcore
+package bril
 
 // Exports json2prg which will take a well-formed bril program JSON object and
 // convert it to our ADTs defined in adt.odin. Then also provide the other

@@ -1,4 +1,4 @@
-package brilcore
+package bril
 
 // Define our ADT's
 Program :: distinct [dynamic]Function
