@@ -33,6 +33,7 @@ Instruction :: struct {
     labels: [dynamic]Label,
     label: string,
     value: Literal,
+    trim: bool,
 }
 
 Literal :: union {
@@ -56,10 +57,30 @@ destroy_instr :: proc(instr: Instruction) {
     delete(instr.labels)
 }
 
+destroy_type :: proc(type: ^Type) {
+    if type.type != nil {
+        destroy_type(type.type)
+    }
+    free(type)
+}
+
 destroy_func :: proc(func: Function) {
     delete(func.args)
     for instr in func.instrs {
         destroy_instr(instr)
     }
     delete(func.instrs)
+    if func.type != nil {
+        destroy_type(func.type)
+    }
+}
+
+trim :: proc(func: ^Function) {
+    trimmed : [dynamic]Instruction
+    for instr in func.instrs[:] {
+        if !instr.trim {
+            append(&trimmed, instr)
+        }
+    }
+    func.instrs = trimmed
 }

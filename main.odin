@@ -48,6 +48,14 @@ main :: proc() {
             fmt.println("program has", num_adds, "additions")
             return
         }
+        case "--simpleDCE": {
+            for _, i in prg {
+                func := &prg[i]
+                for simpleGlobalDCE(func) || simpleLocalDCE(func) {
+                    trim(func)
+                }
+            }
+        }
         case:
     }
     dest_json := prg2json(prg)
