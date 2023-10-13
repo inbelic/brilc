@@ -32,6 +32,7 @@ Instruction :: struct {
     funcs: [dynamic]FuncRef,
     labels: [dynamic]Label,
     label: string,
+    value: Literal,
 }
 
 Literal :: union {
