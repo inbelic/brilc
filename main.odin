@@ -56,6 +56,20 @@ main :: proc() {
                 }
             }
         }
+        case "--localLVN": {
+            for _, i in prg {
+                func := &prg[i]
+                for localLVN(func) {}
+            }
+        }
+        case "--complete": {
+            for _, i in prg {
+                func := &prg[i]
+                for localLVN(func) || simpleGlobalDCE(func) || simpleLocalDCE(func) {
+                    trim(func)
+                }
+            }
+        }
         case:
     }
     dest_json := prg2json(prg)
