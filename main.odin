@@ -29,14 +29,14 @@ main :: proc() {
     defer destroy_program(&prg)
 
     switch args[1] {
-        case "--print-form-blocks": {
+        case "--misc-print-form-blocks": {
             for func in prg {
                 block_map := func2block_map(func)
                 fmt.println("\n", block_map)
             }
             return
         }
-        case "--count-additions": {
+        case "--misc-count-additions": {
             num_adds := 0
             for func in prg {
                 for instr in func.instrs {
@@ -48,7 +48,7 @@ main :: proc() {
             fmt.println("program has", num_adds, "additions")
             return
         }
-        case "--simpleDCE": {
+        case "--opt-simpleDCE": {
             for _, i in prg {
                 func := &prg[i]
                 for simpleGlobalDCE(func) || simpleLocalDCE(func) {
@@ -56,19 +56,26 @@ main :: proc() {
                 }
             }
         }
-        case "--localLVN": {
+        case "--opt-localLVN": {
             for _, i in prg {
                 func := &prg[i]
                 for localLVN(func) {}
             }
         }
-        case "--complete": {
+        case "--opt-complete": {
             for _, i in prg {
                 func := &prg[i]
                 for localLVN(func) || simpleGlobalDCE(func) || simpleLocalDCE(func) {
                     trim(func)
                 }
             }
+        }
+        case "--dfa-defined": {
+            for _, i in prg {
+                func := &prg[i]
+                definedDFA(func)
+            }
+            return
         }
         case:
     }
