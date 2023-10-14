@@ -73,7 +73,7 @@ main :: proc() {
         case "--dfa-defined": {
             for _, i in prg {
                 func := &prg[i]
-                definedDFA(func)
+                worklist_forward(func, null_vec, defined_merge, defined_transfer)
             }
             return
         }
