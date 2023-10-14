@@ -73,7 +73,14 @@ main :: proc() {
         case "--dfa-defined": {
             for _, i in prg {
                 func := &prg[i]
-                worklist_forward(func, null_vec, defined_merge, defined_transfer)
+                worklist_forward(func, null_vec, union_merge, defined_transfer)
+            }
+            return
+        }
+        case "--dfa-livevars": {
+            for _, i in prg {
+                func := &prg[i]
+                worklist_backward(func, null_vec, union_merge, livevar_transfer)
             }
             return
         }

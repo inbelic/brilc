@@ -43,13 +43,64 @@ worklist_forward :: proc(func: ^Function, init: proc() -> $T,
     }
 }
 
-// Here we implement the 3 components of a definition data flow analysis, which
-// simply accumulates all definitions in the function
+// Generalized worklist wrapper that iterates backwards
+worklist_backward :: proc(func: ^Function, init: proc() -> $T,
+                          merge: proc(^T, []Label, map[Label]T),
+                          transfer: proc(^T, Block, T) -> bool) {
+    block_map := func2block_map(func^)
+    defer delete(block_map)
+    preds := predeccessor_map(block_map)
+    defer delete(preds)
+
+    inputs, outputs : map[Label]T
+    worklist : [dynamic]Label
+    defer delete(worklist)
+    for key, _ in block_map {
+        append(&worklist, key)
+        inputs[key] = init()
+        outputs[key] = init()
+    }
+
+    for len(worklist) > 0 {
+        key := pop_front(&worklist)
+        block := block_map[key]
+        if key == "" || key == ".EXIT" { continue }
+        // Merge outputs into inputs
+        succs : [2]Label
+        used := 0
+        if block.true_next != "" {
+            succs[0] = block.true_next
+            used += 1
+        }
+        if block.false_next != "" {
+            succs[1] = block.false_next
+            used += 1
+        }
+        merge(&outputs[key], succs[:used], inputs)
+        // Compute new
+        if transfer(&inputs[key], block, outputs[key]) {
+            for pred in preds[key][:] {
+                append(&worklist, pred)
+            }
+        }
+    }
+
+    for key, inps in inputs {
+        fmt.println(key, "->")
+        fmt.println(" inputs:", inps[:])
+        fmt.println(" outputs:", outputs[key][:])
+    }
+}
+
+// Here we implement various components to plug into the worklist algorithm
+
+// INIT Helpers:
 null_vec :: proc() -> [dynamic]Label {
     return make([dynamic]Label, 0)
 }
 
-defined_merge :: proc(inputs: ^[dynamic]Label, preds: []Label, outputs : map[Label][dynamic]Variable) {
+// MERGE Helpers:
+union_merge :: proc(inputs: ^[dynamic]Label, preds: []Label, outputs: map[Label][dynamic]Variable) {
     clear(inputs)
     for pred_key in preds {
         for out in outputs[pred_key][:] {
@@ -60,6 +111,8 @@ defined_merge :: proc(inputs: ^[dynamic]Label, preds: []Label, outputs : map[Lab
     }
 }
 
+
+// TRANSFER Helpers:
 defined_transfer :: proc(outputs: ^[dynamic]Label, block: Block, inputs: [dynamic]Label) -> (changed: bool) {
     for label in inputs {
         if !slc.contains(outputs[:], label) {
@@ -74,4 +127,44 @@ defined_transfer :: proc(outputs: ^[dynamic]Label, block: Block, inputs: [dynami
         }
     }
     return changed
+}
+
+livevar_transfer :: proc(outputs: ^[dynamic]Label, block: Block, inputs: [dynamic]Label) -> (changed: bool) {
+    adds, dels: [dynamic]Label
+    defer delete(adds); delete(dels)
+    for label in inputs {
+        if !slc.contains(outputs[:], label) {
+            append(outputs, label)
+            append(&adds, label)
+        }
+    }
+    instrs := make([dynamic]^Instruction, len(block.instrs))
+    defer delete(instrs)
+    copy(instrs[:], block.instrs[:])
+    slc.reverse(instrs[:])
+    for instr in instrs {
+        if instr.dest != "" {
+            idx, found := slc.linear_search(outputs[:], instr.dest)
+            if found {
+                unordered_remove(outputs, idx)
+                append(&dels, instr.dest)
+            }
+        }
+        for arg in instr.args {
+            if !slc.contains(outputs[:], arg) {
+                append(outputs, arg)
+                append(&adds, arg)
+            }
+        }
+    }
+
+    for del, i in dels[:] {
+        idx, found := slc.linear_search(adds[:], del)
+        if found {
+            unordered_remove(&adds, idx)
+        } else {
+            return true
+        }
+    }
+    return len(adds) > 0
 }
