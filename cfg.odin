@@ -1,4 +1,5 @@
 package bril
+
 import fmt "core:fmt"
 
 // This will provide a control flow graph of a Function ADT
@@ -17,8 +18,10 @@ func2block_map :: proc(func: Function) -> (block_map: map[Label]Block) {
         instr : ^Instruction = &func.instrs[i]
         if instr.label != "" {
             // Label so we will break here
-            block.true_next = instr.label
-            block_map[label] = block
+            if len(block.instrs) != 0 {
+                block.true_next = instr.label
+                block_map[label] = block
+            }
             label = instr.label
             block = Block{}
         } else {
@@ -35,7 +38,9 @@ func2block_map :: proc(func: Function) -> (block_map: map[Label]Block) {
                     }
                     case:
                 }
-                block_map[label] = block
+                if len(block.instrs) != 0 {
+                    block_map[label] = block
+                }
                 block = Block{}
                 label = fmt.tprintf(".B%d", label_inc)
                 label_inc = label_inc + 1
@@ -51,4 +56,15 @@ func2block_map :: proc(func: Function) -> (block_map: map[Label]Block) {
 
 is_terminator :: proc(instr: Instruction) -> bool {
     return instr.op == "br" || instr.op == "jmp" || instr.op == "ret"
+}
+
+predeccessor_map :: proc(block_map: map[Label]Block) -> (preds: map[Label][dynamic]Label) {
+    for key, _ in block_map {
+        preds[key] = make([dynamic]Variable, 0)
+    }
+    for key, block in block_map {
+        append(&preds[block.true_next], key)
+        append(&preds[block.false_next], key)
+    }
+    return preds
 }
