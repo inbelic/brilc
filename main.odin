@@ -84,6 +84,13 @@ main :: proc() {
             }
             return
         }
+        case "--dfa-cprop": {
+            for _, i in prg {
+                func := &prg[i]
+                worklist_forward(func, null_vec, union_merge, cprop_transfer)
+            }
+            return
+        }
         case:
     }
     dest_json := prg2json(prg)

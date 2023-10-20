@@ -168,3 +168,39 @@ livevar_transfer :: proc(outputs: ^[dynamic]Label, block: Block, inputs: [dynami
     }
     return len(adds) > 0
 }
+
+cprop_transfer :: proc(outputs: ^[dynamic]Label, block: Block, inputs: [dynamic]Label) -> (changed: bool) {
+    for label in inputs {
+        if !slc.contains(outputs[:], label) {
+            append(outputs, label)
+            changed = true
+        }
+    }
+    for instr in block.instrs {
+        if instr.op == "const" {
+            if !slc.contains(outputs[:], instr.dest) {
+                append(outputs, instr.dest)
+            }
+        } else if instr.dest != "" {
+            all_constant := true
+            for arg in instr.args {
+                if !slc.contains(outputs[:], arg) {
+                    all_constant = false
+                }
+            }
+            if all_constant {
+                if !slc.contains(outputs[:], instr.dest) {
+                    append(outputs, instr.dest)
+                    changed = true
+                }
+            } else {
+                idx, found := slc.linear_search(outputs[:], instr.dest)
+                if found {
+                    unordered_remove(outputs, idx)
+                    changed = true
+                }
+            }
+        }
+    }
+    return changed
+}
