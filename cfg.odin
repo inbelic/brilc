@@ -11,6 +11,7 @@ Block :: struct {
 }
 
 func2block_map :: proc(func: Function) -> (block_map: map[Label]Block) {
+    entry_block := true
     label := ".ENTRY"
     label_inc := 0
     block := Block{}
@@ -18,9 +19,10 @@ func2block_map :: proc(func: Function) -> (block_map: map[Label]Block) {
         instr : ^Instruction = &func.instrs[i]
         if instr.label != "" {
             // Label so we will break here
-            if len(block.instrs) != 0 {
+            if len(block.instrs) != 0 || entry_block {
                 block.true_next = instr.label
                 block_map[label] = block
+                entry_block = false
             }
             label = instr.label
             block = Block{}
@@ -40,6 +42,7 @@ func2block_map :: proc(func: Function) -> (block_map: map[Label]Block) {
                 }
                 if len(block.instrs) != 0 {
                     block_map[label] = block
+                    entry_block = false
                 }
                 block = Block{}
                 label = fmt.tprintf(".B%d", label_inc)
@@ -50,6 +53,7 @@ func2block_map :: proc(func: Function) -> (block_map: map[Label]Block) {
     if len(block.instrs) != 0 {
         block.true_next = ".EXIT"
         block_map[label] = block
+        entry_block = false
     }
     return block_map
 }
