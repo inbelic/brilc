@@ -91,6 +91,39 @@ main :: proc() {
             }
             return
         }
+        case "--dom-map": {
+            for _, i in prg {
+                func := &prg[i]
+                dom_map := func2dom_map(func)
+                fmt.eprintln(dom_map)
+                defer delete(dom_map)
+            }
+            return
+        }
+        case "--dom-tree": {
+            for _, i in prg {
+                func := &prg[i]
+                dom_map := func2dom_map(func)
+                defer delete(dom_map)
+                dom_tree := dom_map2dom_tree(dom_map)
+                defer delete(dom_tree)
+                fmt.eprintln(dom_tree)
+            }
+            return
+        }
+        case "--dom-front": {
+            for _, i in prg {
+                func := &prg[i]
+                dom_map := func2dom_map(func)
+                defer delete(dom_map)
+                preds := predeccessor_map(func2block_map(func^))
+                defer delete(preds)
+                dom_front := construct_dom_front(dom_map, preds)
+                defer delete(dom_front)
+                fmt.eprintln(dom_front)
+            }
+            return
+        }
         case:
     }
     dest_json := prg2json(prg)
