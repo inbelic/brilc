@@ -12,7 +12,7 @@ Function :: struct {
     name: string,
     args: [dynamic]Arg,
     type: ^Type,
-    instrs: [dynamic]Instruction,
+    instrs: [dynamic]^Instruction,
 }
 
 Arg :: struct {
@@ -67,7 +67,8 @@ destroy_type :: proc(type: ^Type) {
 destroy_func :: proc(func: Function) {
     delete(func.args)
     for instr in func.instrs {
-        destroy_instr(instr)
+        destroy_instr(instr^)
+        free(instr)
     }
     delete(func.instrs)
     if func.type != nil {
@@ -76,7 +77,7 @@ destroy_func :: proc(func: Function) {
 }
 
 trim :: proc(func: ^Function) {
-    trimmed : [dynamic]Instruction
+    trimmed : [dynamic]^Instruction
     for instr in func.instrs[:] {
         if !instr.trim {
             append(&trimmed, instr)

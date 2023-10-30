@@ -124,6 +124,24 @@ main :: proc() {
             }
             return
         }
+        case "--to-ssa": {
+            for _, i in prg {
+                func := &prg[i]
+                block_map := func2block_map(func^)
+                defer delete(block_map)
+                dom_map := func2dom_map(func)
+                defer delete(dom_map)
+                dom_tree := dom_map2dom_tree(dom_map)
+                defer delete(dom_tree)
+                preds := predeccessor_map(func2block_map(func^))
+                defer delete(preds)
+                dom_front := construct_dom_front(dom_map, preds)
+                defer delete(dom_front)
+
+                insert_phi(func, &block_map, dom_front)
+                rename(&block_map, dom_tree)
+            }
+        }
         case:
     }
     dest_json := prg2json(prg)

@@ -14,8 +14,7 @@ simpleGlobalDCE :: proc(func: ^Function) -> (changed: bool) {
             append(&used, arg)
         }
     }
-    for _, i in func.instrs {
-        instr := &func.instrs[i]
+    for instr in func.instrs {
         if !instr.trim && instr.dest != "" && !slc.contains(used[:], instr.dest) {
             changed = true
             instr.trim = true

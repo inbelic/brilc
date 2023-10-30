@@ -55,7 +55,8 @@ json2arg :: proc(arg_val: json.Value) -> (arg: Arg) {
 }
 
 @(private="file")
-json2instr :: proc(instr_val: json.Object) -> (instr: Instruction) {
+json2instr :: proc(instr_val: json.Object) -> ^Instruction {
+    instr := new(Instruction)
     op := instr_val["op"]
     if op == nil {
         instr.op = ""
@@ -213,7 +214,7 @@ func2json :: proc(func: Function) -> (func_obj: json.Object) {
     }
     instrs : json.Array
     for instr in func.instrs {
-        append(&instrs, instr2json(instr))
+        append(&instrs, instr2json(instr^))
     }
     if len(instrs) != 0 {
         func_obj["instrs"] = instrs

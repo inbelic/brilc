@@ -10,13 +10,14 @@ Block :: struct {
     false_next: Label, // "" denotes none
 }
 
-func2block_map :: proc(func: Function) -> (block_map: map[Label]Block) {
+BlockMap :: map[Label]Block
+
+func2block_map :: proc(func: Function) -> (block_map: BlockMap) {
     entry_block := true
     label := ".ENTRY"
     label_inc := 0
     block := Block{}
-    for _, i in func.instrs[:] {
-        instr : ^Instruction = &func.instrs[i]
+    for instr in func.instrs[:] {
         if instr.label != "" {
             // Label so we will break here
             if len(block.instrs) != 0 || entry_block {
@@ -62,7 +63,7 @@ is_terminator :: proc(instr: Instruction) -> bool {
     return instr.op == "br" || instr.op == "jmp" || instr.op == "ret"
 }
 
-predeccessor_map :: proc(block_map: map[Label]Block) -> (preds: map[Label][dynamic]Label) {
+predeccessor_map :: proc(block_map: BlockMap) -> (preds: map[Label][dynamic]Label) {
     for key, _ in block_map {
         preds[key] = make([dynamic]Variable, 0)
     }
