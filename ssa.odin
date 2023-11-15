@@ -34,7 +34,7 @@ insert_phi :: proc(func: ^Function, block_map: ^BlockMap, dom_front: LabelMap) {
                         phi := new(Instruction)
                         phi.op = "phi"
                         phi.dest = v
-                        phi.args = make([dynamic]Label, 0)
+                        phi.args = make([dynamic]Variable, 0)
                         // store a temporary value to hold the base arg value
                         append(&phi.args, v)
                         phi.labels = make([dynamic]Label, 0)
@@ -147,4 +147,51 @@ deep_clone :: proc(src: StackMap) -> (dest: StackMap) {
         }
     }
     return dest
+}
+
+remove_phi :: proc(func: ^Function, block_map: ^BlockMap) {
+    // iterate to generate the required id values
+    for cur_label, cur_block in block_map {
+        for instr in cur_block.instrs {
+            if instr.op == "phi" {
+                for label, i in instr.labels {
+                    arg := instr.args[i]
+                    block := block_map[label]
+                    pred_instr := block.instrs[0]
+
+                    id := new(Instruction)
+                    id.op = "id"
+                    id.dest = instr.dest
+                    id.args = make([dynamic]Variable, 0)
+                    append(&id.args, arg)
+
+                    inject_at(&block.instrs, 0, id)
+
+                    // We then need to place it before the first jmp, br to
+                    // our current label
+                    idx, _ := slc.linear_search(func.instrs[:], pred_instr)
+                    offset_max := len(block.instrs)
+                    offset := 1
+                    for offset <= offset_max {
+                        t_instr := func.instrs[idx + offset]
+                        if slc.contains(t_instr.labels[:], cur_label) { break }
+                        offset += 1
+                    }
+                    inject_at(&func.instrs, idx + offset, id)
+                }
+            }
+        }
+    }
+    // iterate to remove the phi values
+    for _, block in block_map {
+        // reverse order so to not have index conflict
+        #reverse for instr, i in block.instrs[:] {
+            if instr.op == "phi" {
+                ordered_remove(&block.instrs, i)
+                idx, _ := slc.linear_search(func.instrs[:], instr)
+                ordered_remove(&func.instrs, idx)
+                free(instr)
+            }
+        }
+    }
 }

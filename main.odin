@@ -133,13 +133,22 @@ main :: proc() {
                 defer delete(dom_map)
                 dom_tree := dom_map2dom_tree(dom_map)
                 defer delete(dom_tree)
-                preds := predeccessor_map(func2block_map(func^))
+                preds := predeccessor_map(block_map)
                 defer delete(preds)
                 dom_front := construct_dom_front(dom_map, preds)
                 defer delete(dom_front)
 
                 insert_phi(func, &block_map, dom_front)
                 rename(&block_map, dom_tree)
+            }
+        }
+        case "--from-ssa": {
+            for _, i in prg {
+                func := &prg[i]
+                block_map := func2block_map(func^)
+                defer delete(block_map)
+
+                remove_phi(func, &block_map)
             }
         }
         case:
