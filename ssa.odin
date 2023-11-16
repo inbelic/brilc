@@ -82,7 +82,9 @@ rename_work :: proc(block_map: ^BlockMap, dom_tree: LabelMap, prev_stack: StackM
                 if exists {
                     end_idx := len(vals)
                     x := vals[end_idx - 1]
-                    instr.args[i] = fmt.tprintf("%s.%d", arg, x)
+                    if x != 0 {
+                        instr.args[i] = fmt.tprintf("%s.%d", arg, x)
+                    }
                 }
             }
         }
@@ -98,7 +100,9 @@ rename_work :: proc(block_map: ^BlockMap, dom_tree: LabelMap, prev_stack: StackM
             }
             append(&stack[instr.dest], x + 1)
             defns[instr.dest] = x + 1
-            instr.dest = fmt.tprintf("%s.%d", instr.dest, x + 1)
+            if x != -1 {
+                instr.dest = fmt.tprintf("%s.%d", instr.dest, x + 1)
+            }
         }
     }
     // Iterate over our succs
@@ -109,7 +113,11 @@ rename_work :: proc(block_map: ^BlockMap, dom_tree: LabelMap, prev_stack: StackM
                 vals := stack[v]
                 end_idx := len(vals)
                 x := vals[end_idx - 1]
-                append(&instr.args, fmt.tprintf("%s.%d", v, vals[end_idx - 1]))
+                if x != 0 {
+                    append(&instr.args, fmt.tprintf("%s.%d", v, vals[end_idx - 1]))
+                } else {
+                    append(&instr.args, v)
+                }
                 append(&instr.labels, label)
             }
         }
@@ -121,7 +129,11 @@ rename_work :: proc(block_map: ^BlockMap, dom_tree: LabelMap, prev_stack: StackM
                 vals := stack[v]
                 end_idx := len(vals)
                 x := vals[end_idx - 1]
-                append(&instr.args, fmt.tprintf("%s.%d", instr.dest, vals[0]))
+                if x != 0 {
+                    append(&instr.args, fmt.tprintf("%s.%d", v, vals[end_idx - 1]))
+                } else {
+                    append(&instr.args, v)
+                }
                 append(&instr.labels, label)
             }
         }

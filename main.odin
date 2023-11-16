@@ -111,6 +111,18 @@ main :: proc() {
             }
             return
         }
+        case "--get-preds": {
+            for _, i in prg {
+                func := &prg[i]
+                dom_map := func2dom_map(func)
+                defer delete(dom_map)
+                preds := predeccessor_map(func2block_map(func^))
+                defer delete(preds)
+
+                fmt.eprintln(preds)
+                return
+            }
+        }
         case "--dom-front": {
             for _, i in prg {
                 func := &prg[i]
@@ -118,7 +130,9 @@ main :: proc() {
                 defer delete(dom_map)
                 preds := predeccessor_map(func2block_map(func^))
                 defer delete(preds)
-                dom_front := construct_dom_front(dom_map, preds)
+                dom_tree := dom_map2dom_tree(dom_map)
+                defer delete(dom_tree)
+                dom_front := construct_dom_front(dom_tree, preds)
                 defer delete(dom_front)
                 fmt.eprintln(dom_front)
             }
@@ -135,7 +149,7 @@ main :: proc() {
                 defer delete(dom_tree)
                 preds := predeccessor_map(block_map)
                 defer delete(preds)
-                dom_front := construct_dom_front(dom_map, preds)
+                dom_front := construct_dom_front(dom_tree, preds)
                 defer delete(dom_front)
 
                 insert_phi(func, &block_map, dom_front)

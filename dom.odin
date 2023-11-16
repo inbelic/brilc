@@ -76,20 +76,28 @@ dom_map2dom_tree :: proc(dom_map: LabelMap) -> (dom_tree: LabelMap) {
     return dom_tree
 }
 
-construct_dom_front :: proc(dom_map, preds: LabelMap) -> (dom_front: LabelMap) {
-    for label, _ in dom_map {
+strictly_dominates :: proc(dom_tree: LabelMap, x, y: Label) -> (dominates: bool) {
+    // x strictly dominates y if it is recursively ever a child of x
+    for child in dom_tree[x] {
+        if child == y {
+            return true
+        }
+        dominates = dominates || strictly_dominates(dom_tree, child, y)
+    }
+    return dominates
+}
+
+construct_dom_front :: proc(dom_tree, preds: LabelMap) -> (dom_front: LabelMap) {
+    for label, _ in dom_tree {
         dom_front[label] = make([dynamic]Label, 0)
     }
 
-    for label, ps in preds {
-        doms := dom_map[label] // all the dominators of label
-        for p in ps {
-            for p_dom in dom_map[p][:] { // p_dom(A) is a dominator of a pred
-                if !slc.contains(doms[:], p_dom) || p_dom == label {
-                    // p_dom(A) is not a strict dom of label(B) and so label is
-                    // in the frontier of p_dom
-                    if !slc.contains(dom_front[p_dom][:], label) {
-                        append(&dom_front[p_dom], label)
+    for label, _ in dom_tree {
+        for o_label, _ in dom_tree {
+            if label != o_label && !strictly_dominates(dom_tree, label, o_label) {
+                for p in preds[o_label] {
+                    if p == label || strictly_dominates(dom_tree, label, p) {
+                        append(&dom_front[label], o_label)
                     }
                 }
             }
